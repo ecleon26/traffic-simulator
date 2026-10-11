@@ -1,6 +1,5 @@
 ﻿# Traffic Intersection Simulation — Web Edition
 
-A faithful JavaScript/Canvas port of [KimangKhenng/Traffic-SImulation-and-Visualization](https://github.com/KimangKhenng/Traffic-SImulation-and-Visualization).
 
 ## Run locally
 ```
