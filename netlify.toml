@@ -1,0 +1,10 @@
+﻿[build]
+  publish = "."
+  command = "echo static"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Cache-Control = "public, max-age=3600"

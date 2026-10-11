@@ -1,0 +1,199 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Intersection Simulation</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══ INTRO SCREEN ═══════════════════════════════════════ -->
+<div id="intro-screen" class="screen active">
+  <div class="intro-scroll">
+    <div class="intro-hero">
+      <div class="logo-mark">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <rect width="64" height="64" rx="18" fill="url(#g1)"/>
+          <path d="M16 32h32M32 16v32" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="6" fill="#fff"/>
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        </svg>
+      </div>
+      <h1>Traffic Intersection<br/><span class="gradient-text">Simulation</span></h1>
+      <p class="tagline">Real-time intersection simulation with configurable traffic flows, signal timings, and live performance metrics.</p>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-card-header">
+        <h2>Simulation Setup</h2>
+        <p class="setup-subtitle">Configure before starting — all settings can also be changed during the simulation.</p>
+      </div>
+      <div class="setup-grid">
+        <!-- Signal Timings -->
+        <div class="setup-section">
+          <div class="section-label"><span class="section-icon">🚦</span><span>Signal Timings</span><span class="section-unit">seconds</span></div>
+          <div class="param-row"><label>Green Phase</label><input type="range" id="greenDuration" min="5" max="60" value="20" class="slider green-slider"/><span class="val" id="greenVal">20s</span></div>
+          <div class="param-row"><label>Left-Turn Green</label><input type="range" id="leftDuration" min="3" max="30" value="8" class="slider green-slider"/><span class="val" id="leftVal">8s</span></div>
+          <div class="param-row"><label>Yellow Phase</label><input type="range" id="yellowDuration" min="2" max="10" value="4" class="slider yellow-slider"/><span class="val" id="yellowVal">4s</span></div>
+          <div class="param-row"><label>Red Phase</label><input type="range" id="redDuration" min="10" max="90" value="30" class="slider red-slider"/><span class="val" id="redVal">30s</span></div>
+        </div>
+        <!-- Vehicle Arrival -->
+        <div class="setup-section">
+          <div class="section-label"><span class="section-icon">🚗</span><span>Vehicle Arrival</span><span class="section-unit">seconds between spawns</span></div>
+          <div class="param-row"><label>North &rarr; South</label><input type="range" id="rateNS" min="1" max="10" value="3" class="slider blue-slider"/><span class="val" id="rateNSVal">3s</span></div>
+          <div class="param-row"><label>South &rarr; North</label><input type="range" id="rateSN" min="1" max="10" value="3" class="slider blue-slider"/><span class="val" id="rateSNVal">3s</span></div>
+          <div class="param-row"><label>West &rarr; East</label><input type="range" id="rateWE" min="1" max="10" value="4" class="slider blue-slider"/><span class="val" id="rateWEVal">4s</span></div>
+          <div class="param-row"><label>East &rarr; West</label><input type="range" id="rateEW" min="1" max="10" value="4" class="slider blue-slider"/><span class="val" id="rateEWVal">4s</span></div>
+        </div>
+        <!-- Behaviour -->
+        <div class="setup-section">
+          <div class="section-label"><span class="section-icon">⚙️</span><span>Behaviour Mode</span></div>
+          <div class="mode-options">
+            <label class="mode-option selected" id="modeOpt1">
+              <input type="radio" name="vehicleMode" value="sightseeing" checked/>
+              <div class="mode-card"><div class="mode-icon">👁️</div><div class="mode-name">Sightseeing</div><div class="mode-desc">Vehicles maintain safe following distance</div></div>
+            </label>
+            <label class="mode-option" id="modeOpt2">
+              <input type="radio" name="vehicleMode" value="gothrough"/>
+              <div class="mode-card"><div class="mode-icon">⚡</div><div class="mode-name">Go-Through</div><div class="mode-desc">Vehicles ignore front vehicles</div></div>
+            </label>
+          </div>
+          <div class="section-label" style="margin-top:18px"><span class="section-icon">🚦</span><span>Traffic Lights</span></div>
+          <label class="toggle-row"><span>Enable Traffic Lights</span><div class="toggle-wrap"><input type="checkbox" id="lightsEnabled" checked/><span class="toggle"></span></div></label>
+          <div class="section-label" style="margin-top:14px"><span class="section-icon">🛣️</span><span>Generation Pattern</span></div>
+          <select id="genMethod" class="select-input">
+            <option value="GEN_3">Mixed (left, through, right)</option>
+            <option value="GEN_5">Full Mix (5 lane types)</option>
+            <option value="NO_TURN">Through Only</option>
+            <option value="ONLY_TURN">Turns Only</option>
+          </select>
+        </div>
+      </div>
+      <button class="start-btn" id="startBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+        <span>Start Simulation</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SIMULATION SCREEN ══════════════════════════════════ -->
+<div id="sim-screen" class="screen">
+
+  <!-- Top header bar -->
+  <header class="sim-header">
+    <div class="header-left">
+      <div class="logo-small">
+        <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+          <rect width="64" height="64" rx="18" fill="url(#g2)"/>
+          <path d="M16 32h32M32 16v32" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="6" fill="#fff"/>
+          <defs><linearGradient id="g2" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        </svg>
+      </div>
+      <span class="header-title">Traffic Simulation</span>
+      <span class="sim-state-badge" id="stateBadge">Running</span>
+    </div>
+    <div class="header-controls">
+      <button class="ctrl-btn pause-btn" id="pauseBtn">&#9646;&#9646; Pause</button>
+      <button class="ctrl-btn" id="restartBtn">&#8635; Restart</button>
+      <button class="ctrl-btn" id="settingsBtn">&#9881; Settings</button>
+    </div>
+  </header>
+
+  <!-- ── Middle: sidebar + canvas ── -->
+  <div class="sim-main">
+    <!-- Left sidebar: stats + signal + controls -->
+    <aside class="sidebar">
+
+      <!-- Live Stats -->
+      <div class="stat-panel">
+        <h4 class="panel-title">Live Stats</h4>
+        <div class="stat-row"><span class="stat-label">Total Vehicles</span><span class="stat-value" id="statTotal">0</span></div>
+        <div class="stat-row"><span class="stat-label">Moving</span><span class="stat-value green" id="statMoving">0</span></div>
+        <div class="stat-row"><span class="stat-label">Queued</span><span class="stat-value red" id="statQueued">0</span></div>
+        <div class="stat-row"><span class="stat-label">Throughput</span><span class="stat-value" id="statThroughput">0/min</span></div>
+        <div class="stat-row"><span class="stat-label">Sim Time</span><span class="stat-value mono" id="statTime">00:00</span></div>
+        <div class="cong-block">
+          <div class="cong-header"><span class="stat-label">Congestion</span><span class="stat-value" id="statCongestion">0%</span></div>
+          <div class="congestion-bar"><div class="congestion-fill" id="congestionFill"></div></div>
+        </div>
+      </div>
+
+      <!-- Signal Status -->
+      <div class="stat-panel">
+        <h4 class="panel-title">Signal Status</h4>
+        <div class="signal-grid">
+          <div class="signal-item"><div class="sig-dir">N&#8594;S</div><div class="sig-light" id="light-NS"></div><div class="sig-countdown" id="cnt-NS">-</div></div>
+          <div class="signal-item"><div class="sig-dir">S&#8594;N</div><div class="sig-light" id="light-SN"></div><div class="sig-countdown" id="cnt-SN">-</div></div>
+          <div class="signal-item"><div class="sig-dir">W&#8594;E</div><div class="sig-light" id="light-WE"></div><div class="sig-countdown" id="cnt-WE">-</div></div>
+          <div class="signal-item"><div class="sig-dir">E&#8594;W</div><div class="sig-light" id="light-EW"></div><div class="sig-countdown" id="cnt-EW">-</div></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="stat-panel">
+        <h4 class="panel-title">Controls</h4>
+        <label class="toggle-row small"><span>Traffic Lights</span><div class="toggle-wrap"><input type="checkbox" id="rtLights" checked/><span class="toggle"></span></div></label>
+        <label class="toggle-row small"><span>Vehicle Vision</span><div class="toggle-wrap"><input type="checkbox" id="rtVision"/><span class="toggle"></span></div></label>
+        <label class="toggle-row small"><span>Show Paths</span><div class="toggle-wrap"><input type="checkbox" id="rtPaths"/><span class="toggle"></span></div></label>
+        <div class="speed-control">
+          <div class="speed-header"><span class="stat-label">Sim Speed</span><span class="val" id="simSpeedVal">1x</span></div>
+          <input type="range" id="simSpeed" min="0.25" max="3" step="0.25" value="1" class="slider blue-slider" style="width:100%;display:block;"/>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Canvas centre -->
+    <main class="canvas-wrap">
+      <canvas id="simCanvas"></canvas>
+    </main>
+  </div>
+
+  <!-- ── Bottom: 3 charts always visible ── -->
+  <div class="charts-bar">
+    <div class="chart-card">
+      <div class="chart-title">🚗 Vehicle Count</div>
+      <canvas id="chartVehicles"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🚦 Congestion Level (%)</div>
+      <canvas id="chartCongestion"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⚡ Throughput (veh/min)</div>
+      <canvas id="chartThroughput"></canvas>
+    </div>
+  </div>
+
+</div><!-- /sim-screen -->
+
+<!-- ═══ SETTINGS MODAL ════════════════════════════════════ -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Runtime Settings</h3><button class="modal-close" id="closeSettings">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="param-row"><label>Green Duration (s)</label><input type="range" id="rtGreen" min="5" max="60" value="20" class="slider green-slider"/><span class="val" id="rtGreenVal">20s</span></div>
+      <div class="param-row"><label>Left-Turn Green (s)</label><input type="range" id="rtLeft" min="3" max="30" value="8" class="slider green-slider"/><span class="val" id="rtLeftVal">8s</span></div>
+      <div class="param-row"><label>Yellow Duration (s)</label><input type="range" id="rtYellow" min="2" max="10" value="4" class="slider yellow-slider"/><span class="val" id="rtYellowVal">4s</span></div>
+      <div class="param-row"><label>Red Duration (s)</label><input type="range" id="rtRed" min="10" max="90" value="30" class="slider red-slider"/><span class="val" id="rtRedVal">30s</span></div>
+      <hr/>
+      <div class="param-row"><label>N&#8594;S Spawn Rate (s)</label><input type="range" id="rtNS" min="1" max="10" value="3" class="slider blue-slider"/><span class="val" id="rtNSVal">3s</span></div>
+      <div class="param-row"><label>S&#8594;N Spawn Rate (s)</label><input type="range" id="rtSN" min="1" max="10" value="3" class="slider blue-slider"/><span class="val" id="rtSNVal">3s</span></div>
+      <div class="param-row"><label>W&#8594;E Spawn Rate (s)</label><input type="range" id="rtWE" min="1" max="10" value="4" class="slider blue-slider"/><span class="val" id="rtWEVal">4s</span></div>
+      <div class="param-row"><label>E&#8594;W Spawn Rate (s)</label><input type="range" id="rtEW" min="1" max="10" value="4" class="slider blue-slider"/><span class="val" id="rtEWVal">4s</span></div>
+      <hr/>
+      <button class="start-btn" id="applySettings">Apply Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="simulation.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
